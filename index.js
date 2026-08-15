@@ -84,7 +84,7 @@ document.getElementById('sup2').addEventListener('mouseout', function () {
 
 
 // validate form access
-const validateForm = (form, validations) => {
+const validateForm = (form, validations, formId, getPayload) => {
     const inputs = form.querySelectorAll('.form__input');
     inputs.forEach(input => {
         input.addEventListener('input', () => {
@@ -94,7 +94,7 @@ const validateForm = (form, validations) => {
         });
     });
 
-    form.addEventListener('submit', event => {
+    form.addEventListener('submit', async event => {
         event.preventDefault();
         let allValid = true;
         inputs.forEach(input => {
@@ -104,9 +104,31 @@ const validateForm = (form, validations) => {
             if (!isValid) allValid = false;
         });
         if (allValid) {
-            alert('Форма успішно відправлена!');
-            form.reset();
-            inputs.forEach(input => input.classList.remove('valid', 'error'));
+            const submitButton = form.querySelector('[type="submit"]');
+            if (submitButton) submitButton.disabled = true;
+
+            try {
+                const response = await fetch('/api/forms', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        formId,
+                        website: '',
+                        ...getPayload()
+                    })
+                });
+
+                if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+
+                alert('Форма успішно відправлена!');
+                form.reset();
+                inputs.forEach(input => input.classList.remove('valid', 'error'));
+            } catch (error) {
+                console.error('Form submission failed', error);
+                alert('Не вдалося відправити форму. Спробуйте ще раз пізніше.');
+            } finally {
+                if (submitButton) submitButton.disabled = false;
+            }
         }
     });
 };
@@ -118,7 +140,12 @@ const accessValidations = {
     tel: value => /^\+?3?8?(0\d{9})$/.test(value.trim()),
     email: value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
 };
-validateForm(accessForm, accessValidations);
+validateForm(accessForm, accessValidations, 'ngopie-access', () => ({
+    firstName: document.getElementById('first__name').value,
+    lastName: document.getElementById('second__name').value,
+    phone: document.getElementById('tel').value,
+    email: document.getElementById('email').value
+}));
 
 // default form
 const showForm = () => overlay.style.display = 'flex';
@@ -133,7 +160,10 @@ const defaultValidations = {
     d_first__name: value => value.trim() !== '',
     d_tel: value => /^\+?3?8?(0\d{9})$/.test(value.trim())
 };
-validateForm(defaultForm, defaultValidations);
+validateForm(defaultForm, defaultValidations, 'ngopie-support', () => ({
+    name: document.getElementById('d_first__name').value,
+    phone: document.getElementById('d_tel').value
+}));
 
 // form complaint
 document.addEventListener('DOMContentLoaded', function () {
@@ -154,7 +184,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (event.target === overlay1) overlay1.style.display = 'none';
     });
 
-    validateForm(complaintForm, complaintValidations);
+    validateForm(complaintForm, complaintValidations, 'ngopie-complaint', () => ({
+        name: document.getElementById('c_first__name').value,
+        message: document.getElementById('c_textarea').value
+    }));
 });
 
 // color header
