@@ -84,7 +84,7 @@ document.getElementById('sup2').addEventListener('mouseout', function () {
 
 
 // validate form access
-const validateForm = (form, validations, formId, getPayload) => {
+const validateForm = (form, validations, getFormId, getPayload) => {
     const inputs = form.querySelectorAll('.form__input');
     inputs.forEach(input => {
         input.addEventListener('input', () => {
@@ -112,7 +112,7 @@ const validateForm = (form, validations, formId, getPayload) => {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        formId,
+                        formId: getFormId(),
                         website: '',
                         ...getPayload()
                     })
@@ -140,7 +140,7 @@ const accessValidations = {
     tel: value => /^\+?3?8?(0\d{9})$/.test(value.trim()),
     email: value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
 };
-validateForm(accessForm, accessValidations, 'ngopie-access', () => ({
+validateForm(accessForm, accessValidations, () => 'ngopie-access', () => ({
     firstName: document.getElementById('first__name').value,
     lastName: document.getElementById('second__name').value,
     phone: document.getElementById('tel').value,
@@ -148,11 +148,19 @@ validateForm(accessForm, accessValidations, 'ngopie-access', () => ({
 }));
 
 // default form
-const showForm = () => overlay.style.display = 'flex';
+let defaultFormId = 'ngopie-psychological-support';
+const showForm = formId => {
+    defaultFormId = formId;
+    overlay.style.display = 'flex';
+};
 const hideForm = event => event.target === overlay && (overlay.style.display = 'none');
 const overlay = document.getElementById('overlay');
-document.querySelector('.help__btn').addEventListener('click', showForm);
-document.querySelector('.volonter__btn').addEventListener('click', showForm);
+document.querySelector('.help__btn').addEventListener('click', () => {
+    showForm('ngopie-psychological-support');
+});
+document.querySelector('.volonter__btn').addEventListener('click', () => {
+    showForm('ngopie-volunteer');
+});
 overlay.addEventListener('click', hideForm);
 
 const defaultForm = document.getElementById('default__form');
@@ -160,7 +168,7 @@ const defaultValidations = {
     d_first__name: value => value.trim() !== '',
     d_tel: value => /^\+?3?8?(0\d{9})$/.test(value.trim())
 };
-validateForm(defaultForm, defaultValidations, 'ngopie-support', () => ({
+validateForm(defaultForm, defaultValidations, () => defaultFormId, () => ({
     name: document.getElementById('d_first__name').value,
     phone: document.getElementById('d_tel').value
 }));
@@ -184,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (event.target === overlay1) overlay1.style.display = 'none';
     });
 
-    validateForm(complaintForm, complaintValidations, 'ngopie-complaint', () => ({
+    validateForm(complaintForm, complaintValidations, () => 'ngopie-complaint', () => ({
         name: document.getElementById('c_first__name').value,
         message: document.getElementById('c_textarea').value
     }));
