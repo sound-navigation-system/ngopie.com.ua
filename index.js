@@ -83,6 +83,24 @@ document.getElementById('sup2').addEventListener('mouseout', function () {
 });
 
 
+const getFormErrorMessage = (error) => {
+    if (error instanceof TypeError) {
+        return 'Не вдалося зв’язатися із сервером. Перевірте інтернет-з’єднання та спробуйте ще раз.';
+    }
+
+    switch (error.status) {
+        case 429:
+            return 'Забагато спроб відправлення. Зачекайте 10 хвилин і спробуйте ще раз.';
+        case 502:
+            return 'Поштовий сервіс тимчасово недоступний. Спробуйте відправити форму трохи пізніше.';
+        case 503:
+        case 504:
+            return 'Сервіс відправлення форм тимчасово недоступний. Спробуйте ще раз пізніше.';
+        default:
+            return 'Не вдалося відправити форму. Спробуйте ще раз пізніше.';
+    }
+};
+
 // validate form access
 const validateForm = (form, validations, getFormId, getPayload) => {
     const inputs = form.querySelectorAll('.form__input');
@@ -118,14 +136,18 @@ const validateForm = (form, validations, getFormId, getPayload) => {
                     })
                 });
 
-                if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+                if (!response.ok) {
+                    const error = new Error(`Request failed: ${response.status}`);
+                    error.status = response.status;
+                    throw error;
+                }
 
                 alert('Форма успішно відправлена!');
                 form.reset();
                 inputs.forEach(input => input.classList.remove('valid', 'error'));
             } catch (error) {
                 console.error('Form submission failed', error);
-                alert('Не вдалося відправити форму. Спробуйте ще раз пізніше.');
+                alert(getFormErrorMessage(error));
             } finally {
                 if (submitButton) submitButton.disabled = false;
             }
